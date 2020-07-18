@@ -54,12 +54,28 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      const routeParams = {};
+      if (selectedCategory) {
+        Object.assign(routeParams, { category_like: selectedCategory });
+      }
+      if (searchValue) {
+        Object.assign(routeParams, { name_like: searchValue });
+      }
+
+      const { data: foodsResponse } = await api.get<Food[]>('foods', {
+        params: routeParams,
+      });
+
+      const foodsWithPrice = foodsResponse.map(item => ({
+        ...item,
+        formattedPrice: formatValue(item.price),
+      }));
+      setFoods(foodsWithPrice);
     }
 
     loadFoods();
@@ -67,14 +83,15 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const { data: categoriesResponse } = await api.get('categories');
+      setCategories(categoriesResponse);
     }
 
     loadCategories();
   }, []);
 
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    setSelectedCategory(oldId => (oldId === id ? undefined : id));
   }
 
   return (
@@ -127,7 +144,7 @@ const Dashboard: React.FC = () => {
           <FoodList>
             {foods.map(food => (
               <Food
-                key={food.id}
+                key={food.id + Math.random()}
                 onPress={() => handleNavigate(food.id)}
                 activeOpacity={0.6}
                 testID={`food-${food.id}`}
